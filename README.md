@@ -1,11 +1,16 @@
 # ChainGuard Ethereum Analytics
 
-An explainable Ethereum investigation workstation for verified RPC data, feature extraction and anomaly review. Unusual transactions are not necessarily fraudulent.
+ChainGuard is an explainable Ethereum investigation workstation. It persists investigation leads, fetches genuine mainnet transaction/receipt/block data through a public JSON-RPC provider, derives transparent features, and caches point-in-time observations.
 
-## Current scope
+## Verified capabilities
 
-- Responsive blockchain-forensics landing page
-- `GET /api/health` with a non-cached server timestamp
-- Honest provider-setup state and limited-index scope
+- Signed demo access and persistent analyst notes
+- Strict transaction-hash validation and external Etherscan links
+- PublicNode mainnet JSON-RPC integration with timeout/error handling
+- Fifteen-request-per-minute database-backed rate window and fifteen-minute Postgres cache
+- Exact BigInt parsing for values, gas, fees, input bytes, logs, and execution status
+- Unit tests, cloud CI, and production Playwright RPC flow
 
-Requires Node.js 22+. Run `npm install`, then `npm run dev`. RPC data ingestion will be added without committing provider secrets.
+Wallet graphs, token decoding, configurable rules, and trained anomaly models remain future scope. ChainGuard never equates unusual activity with fraud.
+
+Commands: `npm run dev`, `npm run lint`, `npm test`, `npm run build`, `npm run test:e2e`, and `npm run seed`. See [architecture](docs/ARCHITECTURE.md), [API](docs/API.md), and [deployment](docs/DEPLOYMENT.md).
