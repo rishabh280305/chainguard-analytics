@@ -20,12 +20,12 @@ export type RpcReceipt = {
 };
 
 export function hexToBigInt(value: string | null | undefined) {
-  if (!value || !/^0x[0-9a-f]+$/i.test(value)) return 0n;
+  if (!value || !/^0x[0-9a-f]+$/i.test(value)) return BigInt(0);
   return BigInt(value);
 }
 
 export function formatUnits(value: bigint, decimals: number, precision = 6) {
-  const base = 10n ** BigInt(decimals);
+  const base = BigInt(10) ** BigInt(decimals);
   const whole = value / base;
   const remainder = (value % base).toString().padStart(decimals, "0").slice(0, precision).replace(/0+$/, "");
   return remainder ? `${whole}.${remainder}` : whole.toString();

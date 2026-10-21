@@ -3,8 +3,8 @@ import { buildSnapshot, formatUnits, hexToBigInt } from "../src/lib/ethereum";
 
 describe("Ethereum RPC parsing", () => {
   it("parses hexadecimal quantities without losing integer precision", () => {
-    expect(hexToBigInt("0xde0b6b3a7640000")).toBe(1_000_000_000_000_000_000n);
-    expect(formatUnits(1_234_567_890_000_000_000n, 18)).toBe("1.234567");
+    expect(hexToBigInt("0xde0b6b3a7640000")).toBe(BigInt("1000000000000000000"));
+    expect(formatUnits(BigInt("1234567890000000000"), 18)).toBe("1.234567");
   });
 
   it("derives transparent transaction features", () => {
