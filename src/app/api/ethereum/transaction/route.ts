@@ -1,25 +1,9 @@
 import { database } from "@/lib/db";
 import { buildSnapshot, type RpcReceipt, type RpcTransaction } from "@/lib/ethereum";
 import { getDemoUser } from "@/lib/session";
+import {rpc,DEFAULT_RPC}from"@/lib/rpc";
 
 const HASH = /^0x[a-fA-F0-9]{64}$/;
-const DEFAULT_RPC = "https://ethereum-rpc.publicnode.com";
-
-type RpcResponse<T> = { result?: T; error?: { code: number; message: string } };
-
-async function rpc<T>(endpoint: string, method: string, params: unknown[]) {
-  const response = await fetch(endpoint, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
-    cache: "no-store",
-    signal: AbortSignal.timeout(12_000),
-  });
-  if (!response.ok) throw new Error(`RPC provider returned HTTP ${response.status}.`);
-  const payload = await response.json() as RpcResponse<T>;
-  if (payload.error) throw new Error(`RPC error ${payload.error.code}: ${payload.error.message}`);
-  return payload.result ?? null;
-}
 
 export async function GET(request: Request) {
   const userId = await getDemoUser();
@@ -36,11 +20,10 @@ export async function GET(request: Request) {
     RETURNING request_count`;
   if (Number(rate.request_count) > 15) return Response.json({ error: "RPC lookup limit reached. Try again after the current minute." }, { status: 429, headers: { "Retry-After": "60" } });
 
-  const endpoint = process.env.ETHEREUM_RPC_URL || DEFAULT_RPC;
-  const source = new URL(endpoint).hostname;
+  const source = new URL(process.env.ETHEREUM_RPC_URL || DEFAULT_RPC).hostname;
   try {
     if (sampleLatest) {
-      const latest = await rpc<{ transactions: string[] }>(endpoint, "eth_getBlockByNumber", ["latest", false]);
+      const latest = (await rpc<{ transactions: string[] }>("eth_getBlockByNumber", ["latest", false])).result;
       hash = latest?.transactions.find(candidate => HASH.test(candidate))?.toLowerCase() ?? "";
       if (!hash) return Response.json({ error: "The latest block did not contain a transaction to inspect." }, { status: 404 });
     }
@@ -49,13 +32,13 @@ export async function GET(request: Request) {
     if (cached) return Response.json({ snapshot: cached.snapshot, cache: { hit: true, observedAt: cached.observed_at }, provider: cached.source });
 
     const [transaction, receipt] = await Promise.all([
-      rpc<RpcTransaction>(endpoint, "eth_getTransactionByHash", [hash]),
-      rpc<RpcReceipt>(endpoint, "eth_getTransactionReceipt", [hash]),
+      rpc<RpcTransaction>("eth_getTransactionByHash", [hash]).then(value=>value.result),
+      rpc<RpcReceipt>("eth_getTransactionReceipt", [hash]).then(value=>value.result),
     ]);
     if (!transaction) return Response.json({ error: "Transaction was not found by the configured Ethereum mainnet provider." }, { status: 404 });
     let blockTimestamp: string | null = null;
     if (transaction.blockNumber) {
-      const block = await rpc<{ timestamp: string }>(endpoint, "eth_getBlockByNumber", [transaction.blockNumber, false]);
+      const block = (await rpc<{ timestamp: string }>("eth_getBlockByNumber", [transaction.blockNumber, false])).result;
       if (block?.timestamp) blockTimestamp = new Date(Number(BigInt(block.timestamp)) * 1000).toISOString();
     }
     const snapshot = buildSnapshot(transaction, receipt, blockTimestamp, source);

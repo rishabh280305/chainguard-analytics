@@ -1,0 +1,35 @@
+name: Train anomaly model
+on:
+  workflow_dispatch:
+    inputs:
+      data_url:
+        description: HTTPS URL for a real ChainGuard feature CSV export
+        required: true
+        type: string
+      sha256:
+        description: Expected SHA-256
+        required: true
+        type: string
+jobs:
+  train:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r ml/requirements.txt
+      - name: Download and verify observations
+        env:
+          DATA_URL: ${{ inputs.data_url }}
+          EXPECTED_SHA256: ${{ inputs.sha256 }}
+        run: |
+          curl --fail --location --proto '=https' --tlsv1.2 "$DATA_URL" --output observations.csv
+          echo "$EXPECTED_SHA256  observations.csv" | sha256sum --check --strict
+      - run: python ml/train.py observations.csv --out artifacts
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chainguard-isolation-forest
+          path: artifacts/
+          if-no-files-found: error

@@ -34,6 +34,8 @@ export async function database() {
       request_count integer NOT NULL,
       PRIMARY KEY (user_id, window_start)
     )`;
+    await sql`CREATE TABLE IF NOT EXISTS chainguard.address_snapshots (address text PRIMARY KEY, snapshot jsonb NOT NULL, source text NOT NULL, observed_at timestamptz NOT NULL DEFAULT now())`;
+    await sql`CREATE TABLE IF NOT EXISTS chainguard.block_snapshots (block_number numeric PRIMARY KEY, snapshot jsonb NOT NULL, source text NOT NULL, observed_at timestamptz NOT NULL DEFAULT now())`;
   })();
   await initialized;
   return sql;
