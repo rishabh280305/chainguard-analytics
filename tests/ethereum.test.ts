@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildSnapshot, decodeTokenTransfers, formatUnits, hexToBigInt, scoreRules } from "../src/lib/ethereum";
+import { buildSnapshot, decodeTokenTransfers, formatUnits, hexToBigInt, observedActivity, scoreRules } from "../src/lib/ethereum";
 
 describe("Ethereum RPC parsing", () => {
   it("parses hexadecimal quantities without losing integer precision", () => {
@@ -20,4 +20,13 @@ describe("Ethereum RPC parsing", () => {
 describe("forensic analysis",()=>{
   it("decodes Transfer topics without inventing token decimals",()=>{const logs=[{address:"0x1111111111111111111111111111111111111111",topics:["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",`0x${"0".repeat(24)}${"2".repeat(40)}`,`0x${"0".repeat(24)}${"3".repeat(40)}`],data:"0x64",logIndex:"0x1"}];expect(decodeTokenTransfers(logs)[0].amountRaw).toBe("100")});
   it("keeps rule scoring explainable",()=>{const result=scoreRules({valueWei:"100000000000000000000",gasUsed:"600000",inputBytes:0,executionStatus:"success",contractCreation:false,tokenTransfers:[]});expect(result.score).toBe(55);expect(result.mode).toBe("deterministic-rules")});
+  it("summarizes indexed activity without claiming complete wallet history",()=>{
+    const address=`0x${"a".repeat(40)}`;
+    const result=observedActivity(address,[
+      {source:address,target:`0x${"b".repeat(40)}`,timestamp:"2026-01-01T00:00:00.000Z"},
+      {source:`0x${"c".repeat(40)}`,target:address,timestamp:"2026-01-01T00:05:00.000Z"},
+      {source:address,target:`0x${"b".repeat(40)}`,timestamp:"2026-01-01T00:09:00.000Z"},
+    ]);
+    expect(result).toMatchObject({observedTransactions:3,inbound:1,outbound:2,uniqueCounterparties:2,maxTransactionsInTenMinutes:3,scope:"persisted-snapshots-only"});
+  });
 });
